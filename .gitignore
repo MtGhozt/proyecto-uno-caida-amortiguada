@@ -1,0 +1,36 @@
+# Binarios y objetos
+*.exe
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.mod
+*.out
+caida
+main
+*.ppu
+
+# Pascal / Free Pascal
+*.compiled
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporales Office / extractos
+~$*
+*.tmp
+
+# Python / misc por si se usan scripts auxiliares
+__pycache__/
+*.pyc
+.venv/
+venv/
