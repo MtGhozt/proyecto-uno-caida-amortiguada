@@ -1,34 +1,56 @@
 # NS — `integrar_caida`
 
-Avanza el sistema \(v'=f(t,v)\), \(x'=v\) con RK4 acoplado hasta \(x \ge H\).
+Avanza el sistema con `paso_rk4` desde \(t=0, v=0, x=0\) hasta que \(x \ge H\). El último paso se **recorta** a \(h\cdot frac\) para estimar el instante y la velocidad de aterrizaje. Guarda la tabla (fila inicial, cada `IMPRIMIR_CADA` pasos y la de aterrizaje).
 
-**Entrada:** \(W\), \(\beta\), altura \(H\), \(g\), \(h\), bandera `verbose`.  
-**Salida:** `ResultadoCaida` (\(t_{\mathrm{suelo}}, v_{\mathrm{suelo}}, x_{\mathrm{suelo}}\), pasos).
+| | |
+|---|---|
+| **Entradas** | `W`, `beta`, `altura`, `g`, `h` |
+| **Salidas** | `r: ResultadoCaida` (por referencia) |
+| **Llama a** | `paso_rk4`, `registrar_fila` |
+| **Structorizer** | [`structorizer/integrar_caida.nsd`](structorizer/integrar_caida.nsd) |
 
+Firma: `integrar_caida(W: double, beta: double, altura: double, g: double, h: double, r: ResultadoCaida)`
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ t ← 0                                                                          │
+│ v ← 0                                                                          │
+│ x ← 0                                                                          │
+│ i ← 0                                                                          │
+│ aterrizo ← false                                                               │
+│ r.n_filas ← 0                                                                  │
+├────────────────────────────────────────────────────────────────────────────────┤
+│ registrar_fila(r, t, v, x)                                                     │
+├────────────────────────────────────────────────────────────────────────────────┤
+│ MIENTRAS not aterrizo and (i < MAX_PASOS)                                      │
+│   ┌────────────────────────────────────────────────────────────────────────────┤
+│   │ paso_rk4(h, v, x, g, beta, W, v_sig, x_sig)                                │
+│   ├────────────────────────────────────────────────────────────────────────────┤
+│   │╲                              x_sig ≥ altura                              ╱│
+│   │ ╲ V                                                                    F ╱ │
+│   ├────────────────────────────────────────────────────────┬───────────────────┤
+│   │ frac ← (altura - x) / (x_sig - x)                      │ t ← t + h         │
+│   ├────────────────────────────────────────────────────────┤                   │
+│   │ paso_rk4(h * frac, v, x, g, beta, W, v_sig, x_sig)     │                   │
+│   ├────────────────────────────────────────────────────────┤                   │
+│   │ t ← t + h * frac                                       │                   │
+│   │ aterrizo ← true                                        │                   │
+│   ├────────────────────────────────────────────────────────┴───────────────────┤
+│   │ v ← v_sig                                                                  │
+│   │ x ← x_sig                                                                  │
+│   │ i ← i + 1                                                                  │
+│   ├────────────────────────────────────────────────────────────────────────────┤
+│   │╲                  aterrizo or (i mod IMPRIMIR_CADA = 0)                   ╱│
+│   │ ╲ V                                                                    F ╱ │
+│   ├────────────────────────────────────────────────────────┬───────────────────┤
+│   │ registrar_fila(r, t, v, x)                             │ ∅                 │
+├───┴────────────────────────────────────────────────────────┴───────────────────┤
+│ r.aterrizo ← aterrizo                                                          │
+│ r.t_suelo ← t                                                                  │
+│ r.v_suelo ← v                                                                  │
+│ r.x_suelo ← x                                                                  │
+│ r.pasos ← i                                                                    │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
-┌────────────────────────────────────────────────────────────┐
-│ t ← 0; v ← 0; x ← 0                                        │
-│ si verbose: imprimir encabezado y fila t=0                 │
-│ (opcional: columnas v_analítica, x_analítica)              │
-├────────────────────────────────────────────────────────────┤
-│ REPETIR                                                    │
-│   calcular (v_next, x_next) con un paso RK4 de sistema     │
-│   ┌─────────────────────┬────────────────────────────────┐ │
-│   │ x_next ≥ H          │ x_next < H                     │ │
-│   │ frac ← (H-x)/(x_next-x)                              │ │
-│   │ h_uso ← h · frac                                     │ │
-│   │ rehacer paso con h_uso → v_suelo, t_suelo            │ │
-│   │ si verbose: fila final “suelo”                       │ │
-│   │ devolver éxito                                       │ │
-│   │                     │ t ← t+h; v ← v_next; x ← x_next│ │
-│   │                     │ si verbose y toca imprimir:    │ │
-│   │                     │   fila intermedia              │ │
-│   └─────────────────────┴────────────────────────────────┘ │
-│ HASTA agotar max_pasos → fallar / devolver estado actual   │
-└────────────────────────────────────────────────────────────┘
-```
 
-**Usa:** `f_velocidad` (y opcionalmente `v_analitica` / `x_analitica` solo para tabla).  
-**No hace:** leer del usuario ni buscar \(\beta\).
-
-Nota: el paso de sistema acoplado es interno a este módulo; `paso_rk4` escalar sigue existiendo como pieza reutilizable del contrato.
+**No hace:** E/S, ni buscar \(\beta\). Siempre guarda la tabla, así no necesita una bandera `verbose` (se evita el acoplamiento de control). Si no aterriza en `MAX_PASOS`, `r.aterrizo` es falso y `r` contiene el último estado.

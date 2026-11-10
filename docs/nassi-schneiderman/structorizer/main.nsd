@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:nsd="https://structorizer.fisch.lu" version="3.32-26" preRepeat="hasta que " postFor="hasta" preReturn="devolver" postForIn="en" preWhile="mientras " output="ESCRIBIR" input="LEER" preFor="para" preExit="salir" preLeave="abandonar" ignoreCase="true" preThrow="lanzar" preForIn="para cada" stepFor="con paso" author="Grupo 2" created="2026-11-10" changedby="Grupo 2" changed="2026-11-10" origin="Structorizer 3.32-26" text="&#34;caida_amortiguada&#34;" comment="&#34;Funcionalidad: dirigir el flujo del programa según el modo elegido.&#34;,&#34;Entradas: ninguna (los datos los lee leer_entrada).&#34;,&#34;Salidas: código de salida del programa (0 éxito, 1 error).&#34;" color="ffffff" type="program" style="nice" include_list="tipos_y_constantes">
+	<children>
+		<call text="&#34;leer_entrada(e, ok)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+		<alternative text="&#34;ok&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<call text="&#34;W &#60;- peso_total(e.masa_paracaidista, e.masa_impedimenta, G)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+				<alternative text="&#34;e.modo = 1&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+					<qTrue>
+						<instruction text="&#34;beta &#60;- e.beta&#34;,&#34;encontrado &#60;- true&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+					</qTrue>
+					<qFalse>
+						<call text="&#34;buscar_beta(W, e.altura, G, H_PASO, V_META, TOL_V, beta, encontrado)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+						<alternative text="&#34;not encontrado&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+							<qTrue>
+								<instruction text="&#34;ESCRIBIR 'Aviso: no se alcanzó TOL_V;'&#34;,&#34;ESCRIBIR 'se usa la mejor aproximación'&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+							</qTrue>
+							<qFalse>
+
+							</qFalse>
+						</alternative>
+					</qFalse>
+				</alternative>
+				<call text="&#34;integrar_caida(W, beta, e.altura, G, H_PASO, r)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+				<alternative text="&#34;r.aterrizo&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+					<qTrue>
+						<call text="&#34;mostrar_tabla(r, W, beta, G)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+						<call text="&#34;mostrar_salida(e, W, beta, r, H_PASO, V_META)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+						<instruction text="&#34;codigo &#60;- 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+					</qTrue>
+					<qFalse>
+						<instruction text="&#34;ESCRIBIR 'Sin aterrizaje'&#34;,&#34;codigo &#60;- 1&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+					</qFalse>
+				</alternative>
+			</qTrue>
+			<qFalse>
+				<instruction text="&#34;codigo &#60;- 1&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qFalse>
+		</alternative>
+		<instruction text="&#34;terminar el programa con código de salida codigo&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+	</children>
+</root>

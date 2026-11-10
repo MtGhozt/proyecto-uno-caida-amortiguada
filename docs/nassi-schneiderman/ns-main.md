@@ -1,26 +1,50 @@
-# NS — Programa principal (`main`)
+# NS — `main (programa principal)`
 
-Lenguaje-agnóstico. Orquesta módulos; no calcula física.
+Orquesta el flujo según el modo. No conoce la fórmula de \(f\) ni el esquema RK4; sólo llama módulos.
 
+| | |
+|---|---|
+| **Entradas** | — (los datos los obtiene `leer_entrada`) |
+| **Salidas** | código de salida (0 = éxito, 1 = error) |
+| **Llama a** | `leer_entrada`, `peso_total`, `buscar_beta`, `integrar_caida`, `mostrar_tabla`, `mostrar_salida` |
+| **Structorizer** | [`structorizer/main.nsd`](structorizer/main.nsd) |
+
+Firma: `caida_amortiguada`
+
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│ leer_entrada(e, ok)                                                                        │
+├────────────────────────────────────────────────────────────────────────────────────────────┤
+│╲                                            ok                                            ╱│
+│ ╲ V                                                                                    F ╱ │
+├─────────────────────────────────────────────────────────────────────────────┬──────────────┤
+│ W ← peso_total(e.masa_paracaidista, e.masa_impedimenta, G)                  │ codigo ← 1   │
+├─────────────────────────────────────────────────────────────────────────────┤              │
+│╲                                e.modo = 1                                 ╱│              │
+│ ╲ V                                                                     F ╱ │              │
+├───────────────────────┬─────────────────────────────────────────────────────┤              │
+│ beta ← e.beta         │ buscar_beta(W, e.altura, G, H_PASO,                 │              │
+│ encontrado ← true     │             V_META, TOL_V, beta, encontrado)        │              │
+│                       ├─────────────────────────────────────────────────────┤              │
+│                       │╲                  not encontrado                   ╱│              │
+│                       │ ╲ V                                             F ╱ │              │
+│                       ├───────────────────────────────────────────────┬─────┤              │
+│                       │ ESCRIBIR 'Aviso: no se alcanzó TOL_V;'        │ ∅   │              │
+│                       │ ESCRIBIR 'se usa la mejor aproximación'       │     │              │
+├───────────────────────┴───────────────────────────────────────────────┴─────┤              │
+│ integrar_caida(W, beta, e.altura, G, H_PASO, r)                             │              │
+├─────────────────────────────────────────────────────────────────────────────┤              │
+│╲                                r.aterrizo                                 ╱│              │
+│ ╲ V                                                                     F ╱ │              │
+├───────────────────────────────────────────────┬─────────────────────────────┤              │
+│ mostrar_tabla(r, W, beta, G)                  │ ESCRIBIR 'Sin aterrizaje'   │              │
+├───────────────────────────────────────────────┤ codigo ← 1                  │              │
+│ mostrar_salida(e, W, beta, r, H_PASO, V_META) │                             │              │
+├───────────────────────────────────────────────┤                             │              │
+│ codigo ← 0                                    │                             │              │
+├───────────────────────────────────────────────┴─────────────────────────────┴──────────────┤
+│ terminar el programa con código de salida codigo                                           │
+└────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
-┌─────────────────────────────────────────────────────────┐
-│ leer_entrada → Entrada e                                │
-├─────────────────────────────────────────────────────────┤
-│ W ← peso_total(e.masa_paracaidista,                     │
-│                e.masa_impedimenta, g)                   │
-├───────────────────────┬─────────────────────────────────┤
-│ ¿e.modo = 1?          │ ¿e.modo = 2?                    │
-│ (simular)             │ (buscar beta)                   │
-├───────────────────────┼─────────────────────────────────┤
-│ beta ← e.beta         │ ok ← buscar_beta(W, e.altura,   │
-│ integrar_caida(…,     │   g, h, v_meta, tol_v,          │
-│   verbose=sí, r)      │   → beta, r)                    │
-│ mostrar_salida(…)     │ si ok:                          │
-│                       │   integrar_caida(… verbose, r)  │
-│                       │   mostrar_salida(…, modo=2)     │
-│                       │ si no: error / mejor aprox.     │
-└───────────────────────┴─────────────────────────────────┘
-```
 
-**Coupling:** solo llama módulos; no conoce la fórmula de \(f\) ni el detalle de RK4.  
-**Cohesión:** un solo propósito — dirigir el flujo según el modo.
+**Coupling:** sólo datos (parámetros). **Cohesión:** un único propósito — dirigir el flujo.

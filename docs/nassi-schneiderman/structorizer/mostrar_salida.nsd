@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:nsd="https://structorizer.fisch.lu" version="3.32-26" preRepeat="hasta que " postFor="hasta" preReturn="devolver" postForIn="en" preWhile="mientras " output="ESCRIBIR" input="LEER" preFor="para" preExit="salir" preLeave="abandonar" ignoreCase="true" preThrow="lanzar" preForIn="para cada" stepFor="con paso" author="Grupo 2" created="2026-11-10" changedby="Grupo 2" changed="2026-11-10" origin="Structorizer 3.32-26" text="&#34;mostrar_salida(e: Entrada, W: double, beta: double, r: ResultadoCaida, h: double, v_meta: double)&#34;" comment="&#34;Funcionalidad: imprimir el resumen (masas, W, H, beta, t_suelo, x_suelo, v_suelo, pasos).&#34;,&#34;Entradas: e, W [N], beta [N*s/m], r, h [s], v_meta [m/s].&#34;,&#34;Salidas: ninguna (pantalla).&#34;" color="ffffff" type="sub" style="nice" include_list="tipos_y_constantes">
+	<children>
+		<instruction text="&#34;ESCRIBIR '=== Resultado ==='&#34;,&#34;ESCRIBIR 'masas: ', e.masa_paracaidista, ' + ', e.masa_impedimenta, ' kg | W = ', W, ' N | H = ', e.altura, ' m'&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<alternative text="&#34;e.modo = 2&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<instruction text="&#34;ESCRIBIR 'beta encontrado: ', beta, ' N*s/m'&#34;,&#34;ESCRIBIR 'v_meta: ', v_meta, ' m/s (', v_meta * 3.6, ' km/h)'&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qTrue>
+			<qFalse>
+				<instruction text="&#34;ESCRIBIR 'beta usado: ', beta, ' N*s/m'&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qFalse>
+		</alternative>
+		<instruction text="&#34;ESCRIBIR 't_suelo: ', r.t_suelo, ' s'&#34;,&#34;ESCRIBIR 'x_suelo: ', r.x_suelo, ' m'&#34;,&#34;ESCRIBIR 'v_suelo: ', r.v_suelo, ' m/s (', r.v_suelo * 3.6, ' km/h)'&#34;,&#34;ESCRIBIR 'pasos RK4: ', r.pasos, ' (h = ', h, ' s)'&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+	</children>
+</root>

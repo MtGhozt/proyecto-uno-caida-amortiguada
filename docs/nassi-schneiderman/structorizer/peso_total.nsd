@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:nsd="https://structorizer.fisch.lu" version="3.32-26" preRepeat="hasta que " postFor="hasta" preReturn="devolver" postForIn="en" preWhile="mientras " output="ESCRIBIR" input="LEER" preFor="para" preExit="salir" preLeave="abandonar" ignoreCase="true" preThrow="lanzar" preForIn="para cada" stepFor="con paso" author="Grupo 2" created="2026-11-10" changedby="Grupo 2" changed="2026-11-10" origin="Structorizer 3.32-26" text="&#34;peso_total(masa_paracaidista: double, masa_impedimenta: double, g: double): double&#34;" comment="&#34;Funcionalidad: peso combinado W = (masa_paracaidista + masa_impedimenta) * g.&#34;,&#34;Entradas: masa_paracaidista [kg], masa_impedimenta [kg], g [m/s^2].&#34;,&#34;Salida: W [N].&#34;" color="ffffff" type="sub" style="nice" include_list="tipos_y_constantes">
+	<children>
+		<jump text="&#34;devolver (masa_paracaidista + masa_impedimenta) * g&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></jump>
+	</children>
+</root>

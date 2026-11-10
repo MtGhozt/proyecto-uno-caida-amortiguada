@@ -25,7 +25,7 @@ fpc -O2 main.pas
 
 # Fortran
 cd ..\fortran
-gfortran -Wall -O2 -o caida.exe main.f90
+gfortran -std=f2008 -Wall -O2 -o caida.exe main.f90
 ```
 
 ## Corrida ejemplo (modo investigación)
@@ -39,15 +39,15 @@ Entrada (igual en los tres):
 1500
 ```
 
-Resultado observado en C (referencia; Pascal/Fortran deben acercarse):
+Resultado esperado (calculado con el algoritmo corregido; las tres versiones deben coincidir):
 
 | Magnitud | Valor |
 |----------|-------|
 | \(W\) | 1275.3 N |
-| \(\beta\) encontrado | ≈ 586.82 N·s/m |
+| \(\beta\) encontrado | ≈ 569.53 N·s/m (5 iteraciones de bisección en [1, 2600]) |
 | \(v_{\mathrm{meta}}\) | 2.222… m/s (8 km/h) |
-| \(v_{\mathrm{suelo}}\) | ≈ 2.173 m/s (≈ 7.82 km/h) |
-| \(t_{\mathrm{suelo}}\) | ≈ 690.4 s |
+| \(v_{\mathrm{suelo}}\) | ≈ 2.2392 m/s (≈ 8.061 km/h) |
+| \(t_{\mathrm{suelo}}\) | ≈ 670.11 s (6702 pasos) |
 | Dentro de `tol_v=0.05` | sí |
 
 La tabla imprime columnas analíticas para verificar el RK4.

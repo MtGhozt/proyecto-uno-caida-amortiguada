@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:nsd="https://structorizer.fisch.lu" version="3.32-26" preRepeat="hasta que " postFor="hasta" preReturn="devolver" postForIn="en" preWhile="mientras " output="ESCRIBIR" input="LEER" preFor="para" preExit="salir" preLeave="abandonar" ignoreCase="true" preThrow="lanzar" preForIn="para cada" stepFor="con paso" author="Grupo 2" created="2026-11-10" changedby="Grupo 2" changed="2026-11-10" origin="Structorizer 3.32-26" text="&#34;paso_rk4(h: double, v: double, x: double, g: double, beta: double, W: double, v_sig: double, x_sig: double)&#34;" comment="&#34;Funcionalidad: un paso RK4 del sistema v' = f_velocidad(v), x' = v.&#34;,&#34;Entradas: h [s], v [m/s], x [m], g, beta, W (parámetros de f_velocidad).&#34;,&#34;Salidas (por referencia): v_sig, x_sig (estado tras el paso h).&#34;" color="ffffff" type="sub" style="nice" include_list="tipos_y_constantes">
+	<children>
+		<instruction text="&#34;k1v &#60;- h * f_velocidad(v, g, beta, W)&#34;,&#34;k1x &#60;- h * v&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<instruction text="&#34;k2v &#60;- h * f_velocidad(v + k1v / 2, g, beta, W)&#34;,&#34;k2x &#60;- h * (v + k1v / 2)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<instruction text="&#34;k3v &#60;- h * f_velocidad(v + k2v / 2, g, beta, W)&#34;,&#34;k3x &#60;- h * (v + k2v / 2)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<instruction text="&#34;k4v &#60;- h * f_velocidad(v + k3v, g, beta, W)&#34;,&#34;k4x &#60;- h * (v + k3v)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<instruction text="&#34;v_sig &#60;- v + (k1v + 2 * k2v + 2 * k3v + k4v) / 6&#34;,&#34;x_sig &#60;- x + (k1x + 2 * k2x + 2 * k3x + k4x) / 6&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+	</children>
+</root>

@@ -1,9 +1,17 @@
-{ Caída amortiguada — implementación Pascal (Free Pascal)
-  Seguir docs/algoritmo.md y docs/nassi-schneiderman/
+{ Caida amortiguada de un paracaidista - implementacion en Pascal (Free Pascal)
+  IC4700 Lenguajes de Programacion - Proyecto programado 1
 
-  Build:
-    fpc -O2 main.pas
-}
+  Resuelve  (W/g) dv/dt = W - beta*v,  v(0) = 0,  junto con dx/dt = v,
+  mediante Runge-Kutta de 4.o orden, hasta que el paracaidista llega al
+  suelo (x >= altura). En modo 2 busca por biseccion el valor de beta que
+  produce una velocidad de aterrizaje de ~8 km/h.
+
+  Diseno: docs/algoritmo.md y docs/nassi-schneiderman/ (un diagrama por
+  procedimiento/funcion; los nombres y parametros coinciden con los diagramas).
+  Programacion estructurada: cada subprograma tiene una sola entrada y una
+  sola salida (sin Exit/Break); comunicacion solo por parametros.
+
+  Compilar:  fpc -O2 main.pas }
 
 {$mode objfpc}
 {$H+}
@@ -11,328 +19,353 @@
 program CaidaAmortiguada;
 
 uses
-  SysUtils, Math;
+  SysUtils;
 
+{ ---- Constantes congeladas (docs/algoritmo.md) ---- }
 const
-  G = 9.81;
-  H_PASO = 0.1;
-  V_META = 20.0 / 9.0;
-  TOL_V = 0.05;
-  BETA_LO = 1.0;
-  BETA_HI = 5000.0;
-  MAX_ITER_BETA = 60;
-  IMPRIMIR_CADA = 50;
-  MAX_PASOS = 200000;
+  G = 9.81;                 { gravedad [m/s^2] }
+  H_PASO = 0.1;             { paso RK4 [s] }
+  V_META = 20.0 / 9.0;      { 8 km/h en m/s }
+  TOL_V = 0.05;             { tolerancia de v_suelo [m/s] }
+  BETA_LO = 1.0;            { extremo inferior de la biseccion [N*s/m] }
+  Z_ESTABLE = 2.0;          { beta_hi = Z_ESTABLE*W/(g*h): RK4 estable }
+  MAX_ITER_BETA = 60;       { iteraciones maximas de biseccion }
+  IMPRIMIR_CADA = 50;       { una fila de tabla cada 50 pasos }
+  MAX_PASOS = 200000;       { pasos maximos por simulacion }
+  MAX_FILAS = MAX_PASOS div IMPRIMIR_CADA + 2;
 
+{ ---- Registros ---- }
 type
   TEntrada = record
-    masa_paracaidista: Double;
-    masa_impedimenta: Double;
-    altura: Double;
-    modo: LongInt;
-    beta: Double;
+    modo: LongInt;                 { 1 = beta dado, 2 = buscar beta }
+    masa_paracaidista: Double;     { [kg] }
+    masa_impedimenta: Double;      { [kg] }
+    altura: Double;                { [m] }
+    beta: Double;                  { [N*s/m] (solo modo 1) }
+  end;
+
+  TFila = record
+    t, v, x: Double;               { [s], [m/s], [m] }
   end;
 
   TResultadoCaida = record
-    t_suelo: Double;
-    v_suelo: Double;
-    x_suelo: Double;
-    pasos: LongInt;
+    aterrizo: Boolean;             { verdadero si se alcanzo x >= altura }
+    t_suelo: Double;               { instante de aterrizaje [s] }
+    v_suelo: Double;               { velocidad de aterrizaje [m/s] }
+    x_suelo: Double;               { distancia recorrida al aterrizar [m] }
+    pasos: LongInt;                { pasos RK4 realizados }
+    n_filas: LongInt;              { filas usadas en la tabla }
+    filas: array[1..MAX_FILAS] of TFila;
   end;
 
-function LeerEntrada(var e: TEntrada): Boolean;
-begin
-  Write('Modo (1=simular con beta, 2=buscar beta): ');
-  ReadLn(e.modo);
-  if (e.modo <> 1) and (e.modo <> 2) then
-  begin
-    WriteLn(StdErr, 'Modo invalido.');
-    Exit(False);
-  end;
-
-  Write('Masa paracaidista (kg): ');
-  ReadLn(e.masa_paracaidista);
-  if e.masa_paracaidista <= 0.0 then
-  begin
-    WriteLn(StdErr, 'Masa paracaidista invalida.');
-    Exit(False);
-  end;
-
-  Write('Masa impedimenta (kg): ');
-  ReadLn(e.masa_impedimenta);
-  if e.masa_impedimenta < 0.0 then
-  begin
-    WriteLn(StdErr, 'Masa impedimenta invalida.');
-    Exit(False);
-  end;
-
-  Write('Altura de salto (m): ');
-  ReadLn(e.altura);
-  if e.altura <= 0.0 then
-  begin
-    WriteLn(StdErr, 'Altura invalida.');
-    Exit(False);
-  end;
-
-  e.beta := 0.0;
-  if e.modo = 1 then
-  begin
-    Write('Beta (N*s/m): ');
-    ReadLn(e.beta);
-    if e.beta <= 0.0 then
-    begin
-      WriteLn(StdErr, 'Beta invalida.');
-      Exit(False);
-    end;
-  end;
-
-  LeerEntrada := True;
-end;
-
-function PesoTotal(masa_paracaidista, masa_impedimenta, grav: Double): Double;
-begin
-  PesoTotal := (masa_paracaidista + masa_impedimenta) * grav;
-end;
-
-function FVelocidad(t, v, grav, beta, peso: Double): Double;
-begin
-  { t no entra en la EDO autonoma; se conserva por contrato }
-  if t < -1.0e300 then
-    FVelocidad := 0.0
-  else
-    FVelocidad := grav - (beta * grav / peso) * v;
-end;
-
-function PasoRK4(h, t, estado, grav, beta, peso: Double): Double;
+{ leer_entrada
+  Funcionalidad: pedir y validar modo, masa del paracaidista, masa de la
+    impedimenta, altura y (solo en modo 1) beta. Una lectura no numerica se
+    considera un valor invalido.
+  Entradas: datos del teclado.
+  Salidas: e (registro TEntrada); ok = True si todos los datos son validos. }
+procedure leer_entrada(var e: TEntrada; var ok: Boolean);
 var
-  k1, k2, k3, k4: Double;
+  campo, linea: String;
+  cod: Integer;
 begin
-  k1 := h * FVelocidad(t, estado, grav, beta, peso);
-  k2 := h * FVelocidad(t + h / 2.0, estado + k1 / 2.0, grav, beta, peso);
-  k3 := h * FVelocidad(t + h / 2.0, estado + k2 / 2.0, grav, beta, peso);
-  k4 := h * FVelocidad(t + h, estado + k3, grav, beta, peso);
-  PasoRK4 := estado + (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0;
+  campo := 'modo';
+  Write('Modo (1=simular con beta, 2=buscar beta): ');
+  ReadLn(linea);
+  Val(Trim(linea), e.modo, cod);
+  ok := (cod = 0) and ((e.modo = 1) or (e.modo = 2));
+  e.beta := 0.0;
+
+  if ok then
+  begin
+    campo := 'masa del paracaidista';
+    Write('Masa paracaidista (kg): ');
+    ReadLn(linea);
+    Val(Trim(linea), e.masa_paracaidista, cod);
+    ok := (cod = 0) and (e.masa_paracaidista > 0.0);
+  end;
+  if ok then
+  begin
+    campo := 'masa de la impedimenta';
+    Write('Masa impedimenta (kg): ');
+    ReadLn(linea);
+    Val(Trim(linea), e.masa_impedimenta, cod);
+    ok := (cod = 0) and (e.masa_impedimenta >= 0.0);
+  end;
+  if ok then
+  begin
+    campo := 'altura';
+    Write('Altura de salto (m): ');
+    ReadLn(linea);
+    Val(Trim(linea), e.altura, cod);
+    ok := (cod = 0) and (e.altura > 0.0);
+  end;
+  if ok and (e.modo = 1) then
+  begin
+    campo := 'beta';
+    Write('Beta (N*s/m): ');
+    ReadLn(linea);
+    Val(Trim(linea), e.beta, cod);
+    ok := (cod = 0) and (e.beta > 0.0);
+  end;
+  if not ok then
+    WriteLn(StdErr, 'Valor invalido: ', campo);
 end;
 
-procedure PasoSistemaRK4(h, t, v, x, grav, beta, peso: Double;
-  var v_out, x_out: Double);
+{ peso_total
+  Funcionalidad: peso combinado W = (masa_paracaidista + masa_impedimenta) * g.
+  Entradas: masa_paracaidista [kg], masa_impedimenta [kg], g [m/s^2].
+  Salida: W [N]. }
+function peso_total(masa_paracaidista, masa_impedimenta, g: Double): Double;
+begin
+  peso_total := (masa_paracaidista + masa_impedimenta) * g;
+end;
+
+{ f_velocidad
+  Funcionalidad: lado derecho de la EDO, dv/dt = g - (beta*g/W)*v.
+    La EDO es autonoma (no depende de t).
+  Entradas: v [m/s], g [m/s^2], beta [N*s/m], W [N].
+  Salida: dv/dt [m/s^2]. }
+function f_velocidad(v, g, beta, W: Double): Double;
+begin
+  f_velocidad := g - (beta * g / W) * v;
+end;
+
+{ paso_rk4
+  Funcionalidad: un paso de Runge-Kutta 4 del sistema acoplado
+    v' = f_velocidad(v), x' = v.
+  Entradas: h [s], v [m/s], x [m], g, beta, W (parametros de f_velocidad).
+  Salidas: v_sig, x_sig (estado despues del paso h). }
+procedure paso_rk4(h, v, x, g, beta, W: Double; var v_sig, x_sig: Double);
 var
   k1v, k1x, k2v, k2x, k3v, k3x, k4v, k4x: Double;
 begin
-  k1v := h * FVelocidad(t, v, grav, beta, peso);
+  k1v := h * f_velocidad(v, g, beta, W);
   k1x := h * v;
-  k2v := h * FVelocidad(t + h / 2.0, v + k1v / 2.0, grav, beta, peso);
+  k2v := h * f_velocidad(v + k1v / 2.0, g, beta, W);
   k2x := h * (v + k1v / 2.0);
-  k3v := h * FVelocidad(t + h / 2.0, v + k2v / 2.0, grav, beta, peso);
+  k3v := h * f_velocidad(v + k2v / 2.0, g, beta, W);
   k3x := h * (v + k2v / 2.0);
-  k4v := h * FVelocidad(t + h, v + k3v, grav, beta, peso);
+  k4v := h * f_velocidad(v + k3v, g, beta, W);
   k4x := h * (v + k3v);
 
-  v_out := PasoRK4(h, t, v, grav, beta, peso);
-  x_out := x + (k1x + 2.0 * k2x + 2.0 * k3x + k4x) / 6.0;
-  if Abs(k4v) < 0.0 then
-    v_out := v_out;
+  v_sig := v + (k1v + 2.0 * k2v + 2.0 * k3v + k4v) / 6.0;
+  x_sig := x + (k1x + 2.0 * k2x + 2.0 * k3x + k4x) / 6.0;
 end;
 
-function VAnalitica(t, peso, beta, grav: Double): Double;
+{ registrar_fila
+  Funcionalidad: agregar la fila (t, v, x) a la tabla de r, si hay capacidad.
+  Entradas: r, t [s], v [m/s], x [m].
+  Salidas: r.filas y r.n_filas actualizados. }
+procedure registrar_fila(var r: TResultadoCaida; t, v, x: Double);
 begin
-  VAnalitica := (peso / beta) * (1.0 - Exp(-beta * grav * t / peso));
+  if r.n_filas < MAX_FILAS then
+  begin
+    r.n_filas := r.n_filas + 1;
+    r.filas[r.n_filas].t := t;
+    r.filas[r.n_filas].v := v;
+    r.filas[r.n_filas].x := x;
+  end;
 end;
 
-function XAnalitica(t, peso, beta, grav: Double): Double;
-begin
-  XAnalitica := (peso / beta) * t
-    + (peso / (beta * grav)) * Exp(-beta * grav * t / peso)
-    - (peso / (beta * grav));
-end;
-
-function IntegrarCaida(peso, beta, altura, grav, h: Double; verbose: Boolean;
-  var outRes: TResultadoCaida): Boolean;
+{ integrar_caida
+  Funcionalidad: integrar la caida con paso_rk4 desde el reposo hasta que
+    x >= altura; el ultimo paso se recorta a h*frac para estimar el instante
+    y la velocidad de aterrizaje. Guarda la tabla (fila inicial, cada
+    IMPRIMIR_CADA pasos y la de aterrizaje).
+    Invariante del ciclo: x < altura, por lo que x_sig - x > 0 y frac en (0, 1].
+  Entradas: W [N], beta [N*s/m], altura [m], g [m/s^2], h [s].
+  Salidas: r (aterrizo, t_suelo, v_suelo, x_suelo, pasos, tabla). }
+procedure integrar_caida(W, beta, altura, g, h: Double; var r: TResultadoCaida);
 var
-  t, v, x, v_next, x_next, frac, t_s, v_s, x_s: Double;
+  t, v, x, v_sig, x_sig, frac: Double;
   i: LongInt;
+  aterrizo: Boolean;
 begin
   t := 0.0;
   v := 0.0;
   x := 0.0;
+  i := 0;
+  aterrizo := False;
+  r.n_filas := 0;
+  registrar_fila(r, t, v, x);
 
-  if verbose then
+  while (not aterrizo) and (i < MAX_PASOS) do
   begin
-    WriteLn;
-    WriteLn(Format('%10s %12s %12s %12s %12s',
-      ['t(s)', 'v(m/s)', 'x(m)', 'v_anal', 'x_anal']));
-    WriteLn(Format('%10.2f %12.6f %12.6f %12.6f %12.6f',
-      [t, v, x, VAnalitica(t, peso, beta, grav), XAnalitica(t, peso, beta, grav)]));
-  end;
-
-  for i := 0 to MAX_PASOS - 1 do
-  begin
-    PasoSistemaRK4(h, t, v, x, grav, beta, peso, v_next, x_next);
-
-    if x_next >= altura then
+    paso_rk4(h, v, x, g, beta, W, v_sig, x_sig);
+    if x_sig >= altura then
     begin
-      if Abs(x_next - x) < 1e-15 then
-        frac := 0.0
-      else
-        frac := (altura - x) / (x_next - x);
-      if frac < 0.0 then
-        frac := 0.0;
-      if frac > 1.0 then
-        frac := 1.0;
-
-      if h * frac > 1e-15 then
-      begin
-        PasoSistemaRK4(h * frac, t, v, x, grav, beta, peso, v_s, x_s);
-        t_s := t + h * frac;
-      end
-      else
-      begin
-        v_s := v;
-        x_s := x;
-        t_s := t;
-      end;
-
-      outRes.t_suelo := t_s;
-      outRes.v_suelo := v_s;
-      outRes.x_suelo := x_s;
-      outRes.pasos := i + 1;
-
-      if verbose then
-        WriteLn(Format('%10.2f %12.6f %12.6f %12.6f %12.6f   <-- suelo',
-          [outRes.t_suelo, outRes.v_suelo, outRes.x_suelo,
-           VAnalitica(outRes.t_suelo, peso, beta, grav),
-           XAnalitica(outRes.t_suelo, peso, beta, grav)]));
-
-      Exit(True);
-    end;
-
-    t := t + h;
-    v := v_next;
-    x := x_next;
-
-    if verbose and (((i + 1) mod IMPRIMIR_CADA) = 0) then
-      WriteLn(Format('%10.2f %12.6f %12.6f %12.6f %12.6f',
-        [t, v, x, VAnalitica(t, peso, beta, grav), XAnalitica(t, peso, beta, grav)]));
+      frac := (altura - x) / (x_sig - x);
+      paso_rk4(h * frac, v, x, g, beta, W, v_sig, x_sig);
+      t := t + h * frac;
+      aterrizo := True;
+    end
+    else
+      t := t + h;
+    v := v_sig;
+    x := x_sig;
+    i := i + 1;
+    if aterrizo or (i mod IMPRIMIR_CADA = 0) then
+      registrar_fila(r, t, v, x);
   end;
 
-  outRes.t_suelo := t;
-  outRes.v_suelo := v;
-  outRes.x_suelo := x;
-  outRes.pasos := MAX_PASOS;
-  IntegrarCaida := False;
+  r.aterrizo := aterrizo;
+  r.t_suelo := t;
+  r.v_suelo := v;
+  r.x_suelo := x;
+  r.pasos := i;
 end;
 
-function VelocidadAlSuelo(peso, beta, altura, grav, h: Double): Double;
+{ buscar_beta
+  Funcionalidad: hallar beta por biseccion tal que
+    |v_suelo(beta) - v_meta| <= tol_v. Mas beta => menor v_suelo.
+    hi = Z_ESTABLE*W/(g*h) mantiene |h*lambda| = 2 < 2.785 (RK4 estable).
+  Entradas: W [N], altura [m], g [m/s^2], h [s], v_meta [m/s], tol_v [m/s].
+  Salidas: beta (encontrado o mejor aproximacion) [N*s/m];
+           encontrado = True si se cumplio la tolerancia. }
+procedure buscar_beta(W, altura, g, h, v_meta, tol_v: Double;
+  var beta: Double; var encontrado: Boolean);
 var
   r: TResultadoCaida;
-begin
-  IntegrarCaida(peso, beta, altura, grav, h, False, r);
-  VelocidadAlSuelo := r.v_suelo;
-end;
-
-function BuscarBeta(peso, altura, grav, h, v_meta, tol_v: Double;
-  var beta_out: Double; var verif: TResultadoCaida): Boolean;
-var
-  lo, hi, v_lo, v_hi, mid, v_mid: Double;
+  lo, hi, v_lo, v_hi: Double;
   iter: LongInt;
 begin
   lo := BETA_LO;
-  hi := BETA_HI;
-  v_lo := VelocidadAlSuelo(peso, lo, altura, grav, h);
-  v_hi := VelocidadAlSuelo(peso, hi, altura, grav, h);
+  hi := Z_ESTABLE * W / (g * h);
+  integrar_caida(W, lo, altura, g, h, r);
+  v_lo := r.v_suelo;
+  integrar_caida(W, hi, altura, g, h, r);
+  v_hi := r.v_suelo;
+  encontrado := False;
+  iter := 0;
+  beta := (lo + hi) / 2.0;
 
-  if (v_lo - v_meta) * (v_hi - v_meta) > 0.0 then
-  begin
-    WriteLn(StdErr, Format(
-      'No hay cambio de signo en [%.1f, %.1f] (v_lo=%.4f, v_hi=%.4f, meta=%.4f).',
-      [lo, hi, v_lo, v_hi, v_meta]));
-    Exit(False);
-  end;
-
-  for iter := 1 to MAX_ITER_BETA do
-  begin
-    mid := 0.5 * (lo + hi);
-    v_mid := VelocidadAlSuelo(peso, mid, altura, grav, h);
-
-    if Abs(v_mid - v_meta) <= tol_v then
+  if (v_lo - v_meta) * (v_hi - v_meta) <= 0.0 then
+    while (not encontrado) and (iter < MAX_ITER_BETA) do
     begin
-      beta_out := mid;
-      IntegrarCaida(peso, mid, altura, grav, h, False, verif);
-      Exit(True);
+      beta := (lo + hi) / 2.0;
+      integrar_caida(W, beta, altura, g, h, r);
+      if Abs(r.v_suelo - v_meta) <= tol_v then
+        encontrado := True
+      else if r.v_suelo > v_meta then
+        lo := beta
+      else
+        hi := beta;
+      iter := iter + 1;
     end;
-
-    if v_mid > v_meta then
-      lo := mid
-    else
-      hi := mid;
-  end;
-
-  beta_out := 0.5 * (lo + hi);
-  IntegrarCaida(peso, beta_out, altura, grav, h, False, verif);
-  BuscarBeta := Abs(verif.v_suelo - v_meta) <= tol_v;
 end;
 
-procedure MostrarSalida(const e: TEntrada; peso, beta: Double;
-  const r: TResultadoCaida; modo_busqueda: Boolean);
-var
-  v_kmh: Double;
+{ v_analitica
+  Funcionalidad: velocidad analitica v(t) = (W/beta)*(1 - exp(-beta*g*t/W)).
+  Entradas: t [s], W [N], beta [N*s/m], g [m/s^2].
+  Salida: v(t) [m/s]. }
+function v_analitica(t, W, beta, g: Double): Double;
 begin
-  v_kmh := r.v_suelo * 3.6;
+  v_analitica := (W / beta) * (1.0 - Exp(-beta * g * t / W));
+end;
+
+{ x_analitica
+  Funcionalidad: distancia analitica
+    x(t) = (W/beta)*t + (W/(beta*g))*exp(-beta*g*t/W) - W/(beta*g).
+  Entradas: t [s], W [N], beta [N*s/m], g [m/s^2].
+  Salida: x(t) [m]. }
+function x_analitica(t, W, beta, g: Double): Double;
+begin
+  x_analitica := (W / beta) * t + (W / (beta * g)) * Exp(-beta * g * t / W)
+    - W / (beta * g);
+end;
+
+{ mostrar_tabla
+  Funcionalidad: imprimir la tabla numerica (t, v, x) junto a la solucion
+    analitica, marcando la fila de aterrizaje.
+  Entradas: r (tabla), W [N], beta [N*s/m], g [m/s^2].
+  Salidas: ninguna (pantalla). }
+procedure mostrar_tabla(const r: TResultadoCaida; W, beta, g: Double);
+var
+  k: LongInt;
+begin
+  WriteLn;
+  WriteLn(Format('%10s %12s %12s %12s %12s', ['t(s)', 'v(m/s)', 'x(m)', 'v_anal', 'x_anal']));
+  for k := 1 to r.n_filas do
+  begin
+    Write(Format('%10.2f %12.6f %12.6f %12.6f %12.6f',
+      [r.filas[k].t, r.filas[k].v, r.filas[k].x,
+       v_analitica(r.filas[k].t, W, beta, g),
+       x_analitica(r.filas[k].t, W, beta, g)]));
+    if r.aterrizo and (k = r.n_filas) then
+      Write('   [suelo]');
+    WriteLn;
+  end;
+end;
+
+{ mostrar_salida
+  Funcionalidad: imprimir el resumen de resultados; el texto de beta
+    depende de e.modo.
+  Entradas: e, W [N], beta [N*s/m], r, h [s], v_meta [m/s].
+  Salidas: ninguna (pantalla). }
+procedure mostrar_salida(const e: TEntrada; W, beta: Double;
+  const r: TResultadoCaida; h, v_meta: Double);
+begin
   WriteLn;
   WriteLn('=== Resultado ===');
   WriteLn(Format('masas: %.2f + %.2f kg | W = %.4f N | H = %.2f m',
-    [e.masa_paracaidista, e.masa_impedimenta, peso, e.altura]));
-  if modo_busqueda then
+    [e.masa_paracaidista, e.masa_impedimenta, W, e.altura]));
+  if e.modo = 2 then
   begin
     WriteLn(Format('beta encontrado: %.6f N*s/m', [beta]));
-    WriteLn(Format('v_meta: %.6f m/s (%.3f km/h)', [V_META, V_META * 3.6]));
+    WriteLn(Format('v_meta: %.6f m/s (%.3f km/h)', [v_meta, v_meta * 3.6]));
   end
   else
     WriteLn(Format('beta usado: %.6f N*s/m', [beta]));
   WriteLn(Format('t_suelo: %.4f s', [r.t_suelo]));
   WriteLn(Format('x_suelo: %.6f m', [r.x_suelo]));
-  WriteLn(Format('v_suelo: %.6f m/s (%.3f km/h)', [r.v_suelo, v_kmh]));
-  WriteLn(Format('pasos RK4: %d (h=%.2f s)', [r.pasos, H_PASO]));
+  WriteLn(Format('v_suelo: %.6f m/s (%.3f km/h)', [r.v_suelo, r.v_suelo * 3.6]));
+  WriteLn(Format('pasos RK4: %d (h = %.2f s)', [r.pasos, h]));
 end;
 
+{ Programa principal
+  Funcionalidad: dirigir el flujo del programa segun el modo elegido.
+  Entradas: ninguna (los datos los lee leer_entrada).
+  Salida: codigo de salida (0 exito, 1 error). }
 var
   e: TEntrada;
   r: TResultadoCaida;
-  peso, beta: Double;
+  W, beta: Double;
+  ok, encontrado: Boolean;
+  codigo: LongInt;
 begin
+  { Format/Val usan '.' como separador decimal en cualquier configuracion regional }
+  DefaultFormatSettings.DecimalSeparator := '.';
   WriteLn('Proyecto uno: caida amortiguada (Pascal)');
-  if not LeerEntrada(e) then
-    Halt(1);
-
-  peso := PesoTotal(e.masa_paracaidista, e.masa_impedimenta, G);
-  beta := 0.0;
-
-  if e.modo = 1 then
+  leer_entrada(e, ok);
+  if ok then
   begin
-    beta := e.beta;
-    if not IntegrarCaida(peso, beta, e.altura, G, H_PASO, True, r) then
+    W := peso_total(e.masa_paracaidista, e.masa_impedimenta, G);
+    if e.modo = 1 then
     begin
-      WriteLn(StdErr, Format('No se alcanzo el suelo en %d pasos.', [MAX_PASOS]));
-      Halt(1);
+      beta := e.beta;
+      encontrado := True;
+    end
+    else
+    begin
+      buscar_beta(W, e.altura, G, H_PASO, V_META, TOL_V, beta, encontrado);
+      if not encontrado then
+        WriteLn('Aviso: no se alcanzo TOL_V; se usa la mejor aproximacion');
     end;
-    MostrarSalida(e, peso, beta, r, False);
+    integrar_caida(W, beta, e.altura, G, H_PASO, r);
+    if r.aterrizo then
+    begin
+      mostrar_tabla(r, W, beta, G);
+      mostrar_salida(e, W, beta, r, H_PASO, V_META);
+      codigo := 0;
+    end
+    else
+    begin
+      WriteLn(StdErr, 'Sin aterrizaje: no se alcanzo el suelo en ', MAX_PASOS, ' pasos');
+      codigo := 1;
+    end;
   end
   else
-  begin
-    if not BuscarBeta(peso, e.altura, G, H_PASO, V_META, TOL_V, beta, r) then
-    begin
-      WriteLn(StdErr, 'No se encontro beta dentro de la tolerancia.');
-      WriteLn(Format('Mejor aproximacion: beta=%.6f, v_suelo=%.6f m/s',
-        [beta, r.v_suelo]));
-      Halt(1);
-    end;
-    WriteLn;
-    WriteLn(Format('Verificacion con beta=%.6f:', [beta]));
-    if not IntegrarCaida(peso, beta, e.altura, G, H_PASO, True, r) then
-    begin
-      WriteLn(StdErr, 'No se alcanzo el suelo en la verificacion.');
-      Halt(1);
-    end;
-    MostrarSalida(e, peso, beta, r, True);
-  end;
+    codigo := 1;
+  ExitCode := codigo;
 end.

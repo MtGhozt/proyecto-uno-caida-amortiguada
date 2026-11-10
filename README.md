@@ -62,7 +62,7 @@ gcc -std=c11 -Wall -Wextra -O2 -o caida src/c/main.c -lm
 fpc src/pascal/main.pas
 
 # Fortran
-gfortran -Wall -O2 -o caida src/fortran/main.f90
+gfortran -std=f2008 -Wall -O2 -o caida src/fortran/main.f90
 ```
 
 ## Documentación clave

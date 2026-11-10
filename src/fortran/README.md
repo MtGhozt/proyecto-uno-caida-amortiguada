@@ -9,14 +9,14 @@ Misma estructura que la referencia C / contrato NS.
 ## Compilar y ejecutar
 
 ```bash
-gfortran -Wall -O2 -o caida main.f90
+gfortran -std=f2008 -Wall -O2 -o caida main.f90
 ./caida
 ```
 
 En Windows (PowerShell):
 
 ```powershell
-gfortran -Wall -O2 -o caida.exe main.f90
+gfortran -std=f2008 -Wall -O2 -o caida.exe main.f90
 .\caida.exe
 ```
 

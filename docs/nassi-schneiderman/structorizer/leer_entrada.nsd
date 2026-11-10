@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:nsd="https://structorizer.fisch.lu" version="3.32-26" preRepeat="hasta que " postFor="hasta" preReturn="devolver" postForIn="en" preWhile="mientras " output="ESCRIBIR" input="LEER" preFor="para" preExit="salir" preLeave="abandonar" ignoreCase="true" preThrow="lanzar" preForIn="para cada" stepFor="con paso" author="Grupo 2" created="2026-11-10" changedby="Grupo 2" changed="2026-11-10" origin="Structorizer 3.32-26" text="&#34;leer_entrada(e: Entrada, ok: boolean)&#34;" comment="&#34;Funcionalidad: pedir y validar modo, masa del paracaidista, masa de la impedimenta, altura y (modo 1) beta.&#34;,&#34;Entradas: datos del teclado.&#34;,&#34;Salidas (por referencia): e (registro Entrada), ok (verdadero si todo es válido).&#34;,&#34;Una lectura no numérica se considera valor inválido.&#34;" color="ffffff" type="sub" style="nice" include_list="tipos_y_constantes">
+	<children>
+		<instruction text="&#34;campo &#60;- 'modo'&#34;,&#34;ESCRIBIR 'Modo (1=simular con beta, 2=buscar beta): '&#34;,&#34;LEER e.modo&#34;,&#34;ok &#60;- (e.modo = 1) or (e.modo = 2)&#34;,&#34;e.beta &#60;- 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<alternative text="&#34;ok&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<instruction text="&#34;campo &#60;- 'masa del paracaidista'&#34;,&#34;ESCRIBIR 'Masa paracaidista (kg): '&#34;,&#34;LEER e.masa_paracaidista&#34;,&#34;ok &#60;- e.masa_paracaidista &#62; 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qTrue>
+			<qFalse>
+
+			</qFalse>
+		</alternative>
+		<alternative text="&#34;ok&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<instruction text="&#34;campo &#60;- 'masa de la impedimenta'&#34;,&#34;ESCRIBIR 'Masa impedimenta (kg): '&#34;,&#34;LEER e.masa_impedimenta&#34;,&#34;ok &#60;- e.masa_impedimenta &#62;= 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qTrue>
+			<qFalse>
+
+			</qFalse>
+		</alternative>
+		<alternative text="&#34;ok&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<instruction text="&#34;campo &#60;- 'altura'&#34;,&#34;ESCRIBIR 'Altura de salto (m): '&#34;,&#34;LEER e.altura&#34;,&#34;ok &#60;- e.altura &#62; 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qTrue>
+			<qFalse>
+
+			</qFalse>
+		</alternative>
+		<alternative text="&#34;ok and (e.modo = 1)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<instruction text="&#34;campo &#60;- 'beta'&#34;,&#34;ESCRIBIR 'Beta (N*s/m): '&#34;,&#34;LEER e.beta&#34;,&#34;ok &#60;- e.beta &#62; 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qTrue>
+			<qFalse>
+
+			</qFalse>
+		</alternative>
+		<alternative text="&#34;not ok&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<instruction text="&#34;ESCRIBIR 'Valor inválido: ', campo&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+			</qTrue>
+			<qFalse>
+
+			</qFalse>
+		</alternative>
+	</children>
+</root>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:nsd="https://structorizer.fisch.lu" version="3.32-26" preRepeat="hasta que " postFor="hasta" preReturn="devolver" postForIn="en" preWhile="mientras " output="ESCRIBIR" input="LEER" preFor="para" preExit="salir" preLeave="abandonar" ignoreCase="true" preThrow="lanzar" preForIn="para cada" stepFor="con paso" author="Grupo 2" created="2026-11-10" changedby="Grupo 2" changed="2026-11-10" origin="Structorizer 3.32-26" text="&#34;buscar_beta(W: double, altura: double, g: double, h: double, v_meta: double, tol_v: double, beta: double, encontrado: boolean)&#34;" comment="&#34;Funcionalidad: hallar beta por bisección tal que |v_suelo(beta) - v_meta| &#60;= tol_v.&#34;,&#34;Entradas: W [N], altura [m], g [m/s^2], h [s], v_meta [m/s], tol_v [m/s].&#34;,&#34;Salidas (por referencia): beta (encontrado o mejor aproximación), encontrado (lógico).&#34;,&#34;hi = Z_ESTABLE*W/(g*h) garantiza |h*lambda| = 2 &#60; 2.785 (RK4 estable).&#34;" color="ffffff" type="sub" style="nice" include_list="tipos_y_constantes">
+	<children>
+		<instruction text="&#34;lo &#60;- BETA_LO&#34;,&#34;hi &#60;- Z_ESTABLE * W / (g * h)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<call text="&#34;integrar_caida(W, lo, altura, g, h, r)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+		<instruction text="&#34;v_lo &#60;- r.v_suelo&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<call text="&#34;integrar_caida(W, hi, altura, g, h, r)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+		<instruction text="&#34;v_hi &#60;- r.v_suelo&#34;,&#34;encontrado &#60;- false&#34;,&#34;iter &#60;- 0&#34;,&#34;beta &#60;- (lo + hi) / 2&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<alternative text="&#34;(v_lo - v_meta) * (v_hi - v_meta) &#60;= 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qTrue>
+				<while text="&#34;mientras not encontrado and (iter &#60; MAX_ITER_BETA)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+					<qWhile>
+						<instruction text="&#34;beta &#60;- (lo + hi) / 2&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+						<call text="&#34;integrar_caida(W, beta, altura, g, h, r)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+						<alternative text="&#34;abs(r.v_suelo - v_meta) &#60;= tol_v&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+							<qTrue>
+								<instruction text="&#34;encontrado &#60;- true&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+							</qTrue>
+							<qFalse>
+								<alternative text="&#34;r.v_suelo &#62; v_meta&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+									<qTrue>
+										<instruction text="&#34;lo &#60;- beta&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+									</qTrue>
+									<qFalse>
+										<instruction text="&#34;hi &#60;- beta&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+									</qFalse>
+								</alternative>
+							</qFalse>
+						</alternative>
+						<instruction text="&#34;iter &#60;- iter + 1&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+					</qWhile>
+				</while>
+			</qTrue>
+			<qFalse>
+
+			</qFalse>
+		</alternative>
+	</children>
+</root>

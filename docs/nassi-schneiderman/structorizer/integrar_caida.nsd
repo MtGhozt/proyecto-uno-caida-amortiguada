@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns:nsd="https://structorizer.fisch.lu" version="3.32-26" preRepeat="hasta que " postFor="hasta" preReturn="devolver" postForIn="en" preWhile="mientras " output="ESCRIBIR" input="LEER" preFor="para" preExit="salir" preLeave="abandonar" ignoreCase="true" preThrow="lanzar" preForIn="para cada" stepFor="con paso" author="Grupo 2" created="2026-11-10" changedby="Grupo 2" changed="2026-11-10" origin="Structorizer 3.32-26" text="&#34;integrar_caida(W: double, beta: double, altura: double, g: double, h: double, r: ResultadoCaida)&#34;" comment="&#34;Funcionalidad: integrar la caída con RK4 hasta x &#62;= altura, recortando el último paso.&#34;,&#34;Entradas: W [N], beta [N*s/m], altura [m], g [m/s^2], h [s].&#34;,&#34;Salidas (por referencia): r (aterrizo, t_suelo, v_suelo, x_suelo, pasos, tabla de filas).&#34;,&#34;Invariante del ciclo: x &#60; altura, por lo que x_sig - x &#62; 0 y frac pertenece a (0, 1].&#34;" color="ffffff" type="sub" style="nice" include_list="tipos_y_constantes">
+	<children>
+		<instruction text="&#34;t &#60;- 0&#34;,&#34;v &#60;- 0&#34;,&#34;x &#60;- 0&#34;,&#34;i &#60;- 0&#34;,&#34;aterrizo &#60;- false&#34;,&#34;r.n_filas &#60;- 0&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+		<call text="&#34;registrar_fila(r, t, v, x)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+		<while text="&#34;mientras not aterrizo and (i &#60; MAX_PASOS)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+			<qWhile>
+				<call text="&#34;paso_rk4(h, v, x, g, beta, W, v_sig, x_sig)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+				<alternative text="&#34;x_sig &#62;= altura&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+					<qTrue>
+						<instruction text="&#34;frac &#60;- (altura - x) / (x_sig - x)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+						<call text="&#34;paso_rk4(h * frac, v, x, g, beta, W, v_sig, x_sig)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+						<instruction text="&#34;t &#60;- t + h * frac&#34;,&#34;aterrizo &#60;- true&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+					</qTrue>
+					<qFalse>
+						<instruction text="&#34;t &#60;- t + h&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+					</qFalse>
+				</alternative>
+				<instruction text="&#34;v &#60;- v_sig&#34;,&#34;x &#60;- x_sig&#34;,&#34;i &#60;- i + 1&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+				<alternative text="&#34;aterrizo or (i mod IMPRIMIR_CADA = 0)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0">
+					<qTrue>
+						<call text="&#34;registrar_fila(r, t, v, x)&#34;" comment="&#34;&#34;" color="ffffff" disabled="0"></call>
+					</qTrue>
+					<qFalse>
+
+					</qFalse>
+				</alternative>
+			</qWhile>
+		</while>
+		<instruction text="&#34;r.aterrizo &#60;- aterrizo&#34;,&#34;r.t_suelo &#60;- t&#34;,&#34;r.v_suelo &#60;- v&#34;,&#34;r.x_suelo &#60;- x&#34;,&#34;r.pasos &#60;- i&#34;" comment="&#34;&#34;" color="ffffff" disabled="0" rotated="0"></instruction>
+	</children>
+</root>
