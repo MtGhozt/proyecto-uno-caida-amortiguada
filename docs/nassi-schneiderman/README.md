@@ -2,13 +2,27 @@
 
 Aquí van los diagramas del algoritmo **sin especificar lenguaje**.
 
-## Qué entregar
+## Estado actual (borrador para revisión del equipo)
 
-- Diagrama del programa principal.
-- Diagramas de los módulos del contrato ([`../algoritmo.md`](../algoritmo.md)): entrada, RK4, integración de la caída, búsqueda de \(\beta\), salida.
-- Formato aceptable: PDF, PNG o SVG exportados desde la herramienta que usen (Dia, Structorizer, draw.io, papel escaneado legible, etc.).
+Borradores en Markdown (cajas NS en texto). Sirven para validar **cohesión** y **coupling** antes de exportar PNG/SVG desde Dia, Structorizer o draw.io.
 
-## Convención de nombres
+| Archivo | Módulo |
+|---------|--------|
+| [`ns-main.md`](ns-main.md) | Programa principal |
+| [`ns-leer-entrada.md`](ns-leer-entrada.md) | Entrada / validación |
+| [`ns-paso-rk4.md`](ns-paso-rk4.md) | Paso RK4 escalar |
+| [`ns-integrar-caida.md`](ns-integrar-caida.md) | Integración hasta el suelo |
+| [`ns-buscar-beta.md`](ns-buscar-beta.md) | Bisección de \(\beta\) |
+| [`ns-mostrar-salida.md`](ns-mostrar-salida.md) | Salida |
+
+Módulos auxiliares del contrato (sin diagrama aparte por simplicidad; aparecen dentro de los anteriores):
+
+- `peso_total`, `f_velocidad`, `v_analitica`, `x_analitica`
+
+## Qué entregar (versión final del curso)
+
+- Los mismos diagramas exportados como PDF, PNG o SVG.
+- Convención de nombres al exportar:
 
 ```
 ns-main.png
@@ -19,4 +33,7 @@ ns-buscar-beta.png
 ns-mostrar-salida.png
 ```
 
-Persona 1 lidera; el resto revisa coupling y cohesión.
+## Criterio de revisión
+
+Si se borran nombres de lenguaje, el diagrama sigue siendo la **plantilla única** para C, Pascal y Fortran.  
+Persona diseño lidera; el resto revisa coupling y cohesión contra [`../algoritmo.md`](../algoritmo.md).

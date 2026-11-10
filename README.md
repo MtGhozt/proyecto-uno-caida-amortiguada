@@ -39,10 +39,9 @@ README.md
 
 1. Leer [`docs/enunciado.md`](docs/enunciado.md) y [`docs/modelo-matematico.md`](docs/modelo-matematico.md).
 2. Asignar nombres en [`docs/equipo.md`](docs/equipo.md).
-3. Acordar diagramas NS y congelar [`docs/algoritmo.md`](docs/algoritmo.md).
-4. Implementar en paralelo en `src/c`, `src/pascal`, `src/fortran` (ver [`CONTRIBUTING.md`](CONTRIBUTING.md)).
-5. Validar las tres versiones con la misma entrada y contra la solución analítica.
-6. Buscar \(\beta\) (modo investigación).
+3. Revisar y confirmar el paquete: [`docs/revision-grupo.md`](docs/revision-grupo.md) (contrato + NS + C/Pascal/Fortran).
+4. Validar las tres versiones con la misma entrada y contra la solución analítica.
+5. Exportar diagramas NS a PNG/SVG para la entrega.
 
 ## Roles sugeridos (Persona 1–4)
 

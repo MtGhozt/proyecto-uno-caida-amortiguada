@@ -1,16 +1,29 @@
-# Implementación Pascal
+# Implementación Pascal (Free Pascal)
+
+Misma estructura que la referencia C / contrato NS.
 
 ## Requisitos
 
-- Free Pascal Compiler (`fpc`) u otro compilador Pascal compatible
+- Free Pascal (`fpc`)
 
 ## Compilar y ejecutar
 
 ```bash
-fpc main.pas
+fpc -O2 main.pas
 ./main
 ```
 
+En Windows (PowerShell):
+
+```powershell
+fpc -O2 main.pas
+.\main.exe
+```
+
+## Uso
+
+Igual que C: modo `1` (beta dado) o `2` (buscar beta). Caso enunciado: `2` / `80` / `50` / `1500`.
+
 ## Contrato
 
-Seguir [`docs/algoritmo.md`](../../docs/algoritmo.md) y los diagramas en [`docs/nassi-schneiderman/`](../../docs/nassi-schneiderman/).
+[`docs/algoritmo.md`](../../docs/algoritmo.md) y [`docs/nassi-schneiderman/`](../../docs/nassi-schneiderman/).
